@@ -2,16 +2,20 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
-const BDurl = //add the database url here;
+const BDurl = "mongodb://127.0.0.1:27017/signupDB";
 
 dotenv.config();
 const app = express();
 app.use(express.json()); 
 const cors = require("cors");
+app.use((req, res, next) => {
+  console.log('Incoming request:', req.method, req.url);
+  next();
+});
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 })); 
 mongoose.connect(BDurl, {
@@ -22,11 +26,5 @@ mongoose.connect(BDurl, {
 .catch((err) => console.log("MongoDB Error:", err));
 
 app.use("/api", authRoutes);
-
-
-
-
-
- 
-app.listen(8001, () => console.log(`Server running on port ${8000}`));
+app.listen(8001, () => console.log(`Server running on port ${8001}`));
 

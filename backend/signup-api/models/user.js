@@ -11,5 +11,6 @@ const userSchema = new mongoose.Schema({
   gender: String,
   age: Number,
   guideCode: String,
+  referralCode: { type: String, unique: true },
 });
 module.exports = mongoose.model("User", userSchema);

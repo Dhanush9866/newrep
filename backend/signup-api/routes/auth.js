@@ -10,6 +10,16 @@ const JWT_SECRET = "your_jwt_secret_key";
 // In-memory store for OTPs (for demo; use Redis or DB in production)
 const otpStore = {};
 
+// Helper to generate referral code
+function generateReferralCode(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 router.post("/signup", async (req, res) => {
   const {
     firstName,
@@ -48,6 +58,13 @@ router.post("/signup", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate unique referral code
+    let referralCode;
+    let codeExists = true;
+    while (codeExists) {
+      referralCode = generateReferralCode();
+      codeExists = await User.findOne({ referralCode });
+    }
     const newUser = new User({
       firstName,
       lastName,
@@ -58,7 +75,8 @@ router.post("/signup", async (req, res) => {
       country,
       gender,
       age,
-      guideCode
+      guideCode,
+      referralCode
     });
 
     await newUser.save();
@@ -115,12 +133,12 @@ router.post("/pass", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'EMAIL_ID',
-        pass: 'APP_PASSWORD',
+        user: 'laptoptest7788@gmail.com',
+        pass: 'uqfiabjkiqudrgdw',
       },
     });
     await transporter.sendMail({
-      from: 'EMAIL_ID',
+      from: 'laptoptest7788@gmail.com',
       to: email,
       subject: 'Your OTP Code',
       text: `Your OTP code is: ${otp}`,
@@ -167,6 +185,61 @@ router.post('/reset-password', async (req, res) => {
       return res.status(404).json({ msg: 'User not found' });
     }
     res.json({ msg: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+});
+
+// Get current user info (for dashboard)
+const authMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ msg: 'No token, authorization denied' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ msg: 'Token is not valid' });
+  }
+};
+
+router.get('/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    res.json({ data: user });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+});
+
+// Generate referral code for logged-in user if not present
+router.post('/generate-referral-code', authMiddleware, async (req, res) => {
+  console.log("Camed to generate referral code api");
+  try {
+    console.log("Camed to generate referral code api");
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    if (user.referralCode) {
+      return res.json({ referralCode: user.referralCode, msg: 'Referral code already exists' });
+    }
+    // Generate unique referral code
+    let referralCode;
+    let codeExists = true;
+    while (codeExists) {
+      referralCode = generateReferralCode();
+      codeExists = await User.findOne({ referralCode });
+    }
+    user.referralCode = referralCode;
+    await user.save();
+    res.json({ referralCode });
   } catch (err) {
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
