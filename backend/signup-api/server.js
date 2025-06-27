@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
-const BDurl = "mongodb://127.0.0.1:27017/signupDB";
+const BDurl = MONGODBURL;
 
 dotenv.config();
 const app = express();
