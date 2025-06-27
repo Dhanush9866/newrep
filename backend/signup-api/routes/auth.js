@@ -133,12 +133,12 @@ router.post("/pass", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'laptoptest7788@gmail.com',
-        pass: 'uqfiabjkiqudrgdw',
+        user: 'EMAIL',
+        pass: 'APPPASSWORD',
       },
     });
     await transporter.sendMail({
-      from: 'laptoptest7788@gmail.com',
+      from: 'EMAIL',
       to: email,
       subject: 'Your OTP Code',
       text: `Your OTP code is: ${otp}`,
